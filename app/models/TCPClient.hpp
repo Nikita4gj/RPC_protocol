@@ -1,59 +1,60 @@
+#pragma once
+
+
 #include <sys/socket.h>
-#include <sys/epoll.h>
-#include <arpa/inet.h>
+#include <netinet/tcp.h>
+#include <netdb.h>
 #include <unistd.h>
 #include <cstring>
 
-#include<stdexcept>
 #include<string_view>
 #include<string>
 
 #include "SocketGuard.hpp"
-
-#pragma once
-
-[[noreturn]] void throw_errno(const char* msg)
-{
-    throw std::runtime_error(
-        std::string(msg) + ": " + strerror(errno)
-    );
-} 
+#include "../utils/errors.hpp"
 
 class TCPClient
 {
-    SocketGuard server_fd;
-    sockaddr_in addr;
-
-    bool stop;
+    SocketGuard client_fd;
 
     public:
-        TCPClient() : server_fd{-1}, stop{false}
+        TCPClient() : client_fd{-1} {}
+
+        void connect(std::string_view server_ip = "127.0.0.1", const uint16_t port = 8080)
         {
-            memset(&addr, 0, sizeof(addr));
-        }
+            addrinfo hints{}, *res;
 
-        void init(const uint16_t port = 8080)
-        {
-            if(
-                server_fd = SocketGuard(socket(AF_INET, SOCK_STREAM, 0));
-                server_fd.get() == -1
-            )
-            throw_errno("Init, server_fd: ");
-        
-            addr.sin_family = AF_INET;
-            addr.sin_port = htons(port);
-            addr.sin_addr.s_addr = INADDR_ANY;
-
-            int opt = 1;
-            if(setsockopt(server_fd.get(), SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)))
-                throw_errno("Init, setcokopt: ");
-
+            hints.ai_family = AF_INET;
+            hints.ai_socktype = SOCK_STREAM;
             
+            if(getaddrinfo(server_ip.data(), std::to_string(port).c_str(), &hints, &res)!=0)
+                throw_gaierror("Connect, getaddrinfo");
 
-            if(bind(server_fd.get(), (sockaddr*)&addr, sizeof(addr))<0)
-                throw_errno("Init, bind: ");
+            bool connected = false;
 
-            
+            for(auto it = res; it != nullptr && !connected; it = it->ai_next)
+            {
+                SocketGuard temp_fd {socket(it->ai_family, it->ai_socktype, 0)};
+
+                if(::connect(temp_fd.get(), it->ai_addr, it->ai_addrlen)==0)
+                {
+                    connected = true;
+                    client_fd = std::move(temp_fd);
+                }
+            }
+
+            freeaddrinfo(res);
+
+            if(!connected)
+                throw_errno("Failed to connect to the server");
+
+            client_fd.set_options(
+                std::make_tuple(IPPROTO_TCP,  TCP_NODELAY,   1),
+                std::make_tuple(SOL_SOCKET ,  SO_KEEPALIVE,  1),
+                std::make_tuple(IPPROTO_TCP,  TCP_KEEPIDLE,  120),
+                std::make_tuple(IPPROTO_TCP,  TCP_KEEPINTVL, 20),
+                std::make_tuple(IPPROTO_TCP,  TCP_KEEPCNT,   3)
+            );
         }
 };
 

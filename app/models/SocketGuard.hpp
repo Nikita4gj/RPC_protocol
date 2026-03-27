@@ -1,10 +1,13 @@
+#pragma once
+
+
 #include <sys/socket.h>
 #include <unistd.h>
 #include <fcntl.h>
 
 #include <tuple>
 
-#pragma once
+#include "../utils/errors.hpp"
 
 class SocketGuard
 {
@@ -55,8 +58,8 @@ class SocketGuard
             auto set_option = [this](OPTION option) mutable
             {
                 auto [level, optname, opt] = option;
-                if(setsockopt(fd, level, optname, &opt, sizeof(opt))<0);
-                    // ! throw_errno("SocketGuard, set_options")
+                if(setsockopt(fd, level, optname, &opt, sizeof(opt))<0)
+                    throw_errno("SocketGuard, set_options");
             };
 
             (set_option(tuples), ...);
