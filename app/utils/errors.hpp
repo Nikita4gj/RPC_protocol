@@ -13,9 +13,9 @@
     );
 }
 
-[[noreturn]] inline void throw_gaierror(const char* msg)
+[[noreturn]] inline void throw_gaierror(const char* msg, int gai_code)
 {
     throw std::runtime_error(
-        std::string(msg) + ": " + gai_strerror(errno)
+        std::string(msg) + ": " + gai_strerror(gai_code)
     );
 }

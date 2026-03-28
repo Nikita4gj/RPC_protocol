@@ -20,7 +20,7 @@ int main()
         );
     }
     catch(std::exception& e){
-        std::cerr << e.what() << "\n";
+        std::cerr << e.what() << std::endl;
     }
 
     int val;
@@ -28,14 +28,13 @@ int main()
 
     getsockopt(fd.get(), SOL_SOCKET, SO_REUSEADDR, &val, &len);
 
-    std::cout << "SO_REUSEADDR: " << val << "\n";
+    std::cout << "SO_REUSEADDR: " << val << std::endl;
 
     getsockopt(fd.get(), SOL_SOCKET, SO_KEEPALIVE, &val, &len);
 
-    std::cout << "SO_KEEPALIVE: " << val << "\n";
+    std::cout << "SO_KEEPALIVE: " << val << std::endl;
 
     getsockopt(fd.get(), IPPROTO_TCP, TCP_NODELAY, &val, &len);
 
-    std::cout << "TCP_NODELAY: " << val << "\n";
-
+    std::cout << "TCP_NODELAY: " << val << std::endl;
 }

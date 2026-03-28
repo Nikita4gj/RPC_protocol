@@ -10,7 +10,7 @@
 #include<string_view>
 #include<string>
 
-#include "SocketGuard.hpp"
+#include "../models/SocketGuard.hpp"
 #include "../utils/errors.hpp"
 
 class TCPClient
@@ -27,14 +27,19 @@ class TCPClient
             hints.ai_family = AF_INET;
             hints.ai_socktype = SOCK_STREAM;
             
-            if(getaddrinfo(server_ip.data(), std::to_string(port).c_str(), &hints, &res)!=0)
-                throw_gaierror("Connect, getaddrinfo");
+            if(
+                auto rc = getaddrinfo(server_ip.data(), std::to_string(port).c_str(), &hints, &res);
+                rc != 0    
+            ) throw_gaierror("Connect, getaddrinfo", rc);
 
             bool connected = false;
 
             for(auto it = res; it != nullptr && !connected; it = it->ai_next)
             {
                 SocketGuard temp_fd {socket(it->ai_family, it->ai_socktype, 0)};
+
+                if(temp_fd.get() == -1)
+                    continue;
 
                 if(::connect(temp_fd.get(), it->ai_addr, it->ai_addrlen)==0)
                 {

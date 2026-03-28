@@ -16,8 +16,7 @@ class SocketGuard
     public:
         explicit SocketGuard(): fd{-1} {}
 
-        explicit SocketGuard(int socket_fd) : fd{socket_fd}
-        {}
+        explicit SocketGuard(int socket_fd) : fd{socket_fd}{}
 
         SocketGuard(SocketGuard&) = delete;
         SocketGuard operator=(SocketGuard&) = delete;
