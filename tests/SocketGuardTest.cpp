@@ -37,4 +37,6 @@ int main()
     getsockopt(fd.get(), IPPROTO_TCP, TCP_NODELAY, &val, &len);
 
     std::cout << "TCP_NODELAY: " << val << std::endl;
+
+    std::cout << "All tests passed!\n" << std::endl;
 }

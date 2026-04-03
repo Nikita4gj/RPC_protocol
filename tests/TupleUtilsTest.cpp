@@ -1,5 +1,5 @@
 #include <iostream>
-#include <assert.h>
+#include <сassert>
 
 #include "../app/utils/tuple_utils.hpp"
 
@@ -144,4 +144,5 @@ int main()
 
         std::cout << counter++ << ".Pass\n" << std::endl;
     }
+    std::cout << "All tests passed!\n" << std::endl;
 }

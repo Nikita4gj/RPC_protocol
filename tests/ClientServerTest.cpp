@@ -31,9 +31,10 @@ int main()
                     TCPClient client;
                     client.connect();
 
-                    server.accept();
                     std::this_thread::sleep_for(1s);
+
                     std::lock_guard lock(mx);
+                    server.accept();
                     std::cout << "Everything okay, whith client one\n";
                 }
                 catch(const std::exception& e)
@@ -46,11 +47,11 @@ int main()
         TCPClient client;
         client.connect();
 
-        server.accept();
         std::this_thread::sleep_for(1s);
 
         {
             std::lock_guard lock(mx);
+            server.accept();
             std::cout << "Everything okay, whith client two\n";
         }
 

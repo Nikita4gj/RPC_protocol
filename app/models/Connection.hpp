@@ -11,5 +11,8 @@ namespace rpc::models
     {
         SocketGuard fd;
         sockaddr_in addr;
+        
+        Connection(SocketGuard fd, sockaddr_in addr) noexcept
+        : fd{std::move(fd)}, addr{addr} {}
     };
 }

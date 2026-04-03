@@ -13,15 +13,26 @@
 #include "../models/SocketGuard.hpp"
 #include "../utils/errors.hpp"
 
+
 namespace rpc::net
 {
+    using rpc::models::SocketGuard;
+    
     class TCPClient
     {
-        rpc::models::SocketGuard _client_fd;
+        SocketGuard _client_fd;
     
         public:
-            TCPClient() : _client_fd{-1} {}
+            TCPClient() noexcept : _client_fd{-1} {}
     
+            TCPClient(const TCPClient&) = delete;
+            TCPClient& operator=(const TCPClient&) = delete;
+
+            TCPClient(TCPClient&&) noexcept = default;
+            TCPClient& operator=(TCPClient&&) noexcept = default;
+
+            ~TCPClient() = default;
+
             void connect(std::string_view server_ip = "127.0.0.1", const uint16_t port = 8080)
             {
                 addrinfo hints{}, *res;
@@ -38,7 +49,7 @@ namespace rpc::net
     
                 for(auto it = res; it != nullptr && !connected; it = it->ai_next)
                 {
-                    rpc::models::SocketGuard temp_fd {socket(it->ai_family, it->ai_socktype, 0)};
+                    SocketGuard temp_fd {socket(it->ai_family, it->ai_socktype, 0)};
     
                     if(temp_fd.get() == -1)
                         continue;

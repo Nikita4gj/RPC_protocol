@@ -7,21 +7,30 @@
 #include <unistd.h>
 
 #include "../models/SocketGuard.hpp"
-#include "../models/Connectiom.hpp"
+#include "../models/Connection.hpp"
 #include "../utils/errors.hpp"
 
-using rpc::models::SocketGuard;
 
 namespace rpc::net
 {
+    using rpc::models::SocketGuard;
+
     class TCPServer
     {
         SocketGuard _server_fd;
         sockaddr_in _addr;
     
         public:
-            TCPServer() : _server_fd{-1}, _addr{} {}
-    
+            TCPServer() noexcept : _server_fd{-1}, _addr{} {}
+
+            TCPServer(const TCPServer&) = delete;
+            TCPServer& operator=(const TCPServer&) = delete;
+
+            TCPServer(TCPServer&&) noexcept = default;
+            TCPServer& operator=(TCPServer&&) noexcept = default;
+
+            ~TCPServer() = default;
+
             void init(const uint16_t port = 8080)
             {
                 if(
@@ -48,7 +57,7 @@ namespace rpc::net
                 //* Add epoll
             }
     
-            void listen(const int max_half_open_cons)
+            void listen(const int max_half_open_cons) const
             {
                 //* Nonblock socket whith epoll
     
@@ -72,7 +81,6 @@ namespace rpc::net
                 ) rpc::utils::errors::throw_errno("Accept");
     
                 return rpc::models::Connection{SocketGuard(con_fd), con_addr};
-    
             }
     };
 }

@@ -13,75 +13,81 @@ namespace rpc::models
 {
     class SocketGuard
     {
-        int _fd;
+        int _socket_fd;
         
-        public:
-            explicit SocketGuard(): _fd{-1} {}
+        using _OPTION = std::tuple<int, int, int>;
 
-            explicit SocketGuard(int socket_fd) : _fd{socket_fd}{}
+        void _set_option (_OPTION option) const
+        {
+            auto [level, optname, opt] = option;
+            if(setsockopt(_socket_fd, level, optname, &opt, sizeof(opt))<0)
+                rpc::utils::errors::throw_errno("SocketGuard, set_options");
+        };
+
+        public:
+            SocketGuard() noexcept : _socket_fd{-1} {}
+
+            explicit SocketGuard(int socket_fd) noexcept : _socket_fd{socket_fd}{}
 
             SocketGuard(SocketGuard&) = delete;
             SocketGuard operator=(SocketGuard&) = delete;
 
-            SocketGuard(SocketGuard&& other) : _fd{-1}
+            SocketGuard(SocketGuard&& other) noexcept : _socket_fd{-1}
             {
-                _fd = other._fd;
-                other._fd = -1;
+                _socket_fd = other._socket_fd;
+                other._socket_fd = -1;
             }
 
-            SocketGuard& operator=(SocketGuard&& other)
+            SocketGuard& operator=(SocketGuard&& other) noexcept
             {
-                if(_fd!=-1)
-                    ::close(_fd);
+                if(_socket_fd!=-1)
+                    ::close(_socket_fd);
 
-                _fd = other._fd;
-                other._fd = -1;
+                _socket_fd = other._socket_fd;
+                other._socket_fd = -1;
 
                 return *this;
             }
 
-            void set_nonblock()
+            ~SocketGuard()
             {
-                int flags = fcntl(_fd, F_GETFL);
-                fcntl(_fd, F_SETFL, flags | O_NONBLOCK);
+                close();
             }
 
-            using OPTION = std::tuple<int, int, int>;
+            void set_nonblock() 
+            {
+                int flags = fcntl(_socket_fd, F_GETFL);
+
+                if(flags == -1)
+                    rpc::utils::errors::throw_errno("Set_nonblock");
+
+                if(fcntl(_socket_fd, F_SETFL, flags | O_NONBLOCK) == -1)
+                    rpc::utils::errors::throw_errno("Set_nonblock");
+            }
 
             template<class... OPTIONS>
             void set_options(OPTIONS... tuples)
             {
                 static_assert(
-                    (std::is_constructible_v<OPTION, std::decay_t<OPTIONS>> && ...),
+                    (std::is_constructible_v<_OPTION, std::decay_t<OPTIONS>> && ...),
                     "The type must be constructed in std::tuple<int, int, int>"
                 );
 
-                auto set_option = [this](OPTION option) mutable
-                {
-                    auto [level, optname, opt] = option;
-                    if(setsockopt(_fd, level, optname, &opt, sizeof(opt))<0)
-                        throw_errno("SocketGuard, set_options");
-                };
-
-                (set_option(tuples), ...);    
+                (_set_option(tuples), ...);    
             }
 
-            const int& get(){return _fd;}
+            const int& get() const noexcept { return _socket_fd; }
 
-            int release(){int f = _fd; _fd = -1; return f;}
+            int release() noexcept { int f = _socket_fd; _socket_fd = -1; return f; }
 
-            void close()
+            void close() noexcept
             {
-                if(_fd != -1)
+                if(_socket_fd != -1)
                 {
-                    ::close(_fd);
-                    _fd = -1;
+                    ::close(_socket_fd); 
+                    //* The error is intentionally ignored — the destructor does not throw an exception
+                    _socket_fd = -1;
                 }
-            }
-
-            ~SocketGuard()
-            {
-                if(_fd !=-1) ::close(_fd);
             }
     };
 }
